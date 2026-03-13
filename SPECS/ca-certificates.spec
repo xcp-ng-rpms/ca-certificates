@@ -35,11 +35,11 @@ Name: ca-certificates
 # to have increasing version numbers. However, the new scheme will work, 
 # because all future versions will start with 2013 or larger.)
 
-Version: 2017.2.20
+Version: 2021.2.50
 # On RHEL 7.x, please keep the release version >= 70
 # When rebasing on Y-Stream (7.y), use 71, 72, 73, ...
 # When rebasing on Z-Stream (7.y.z), use 70.0, 70.1, 70.2, ...
-Release: 71%{?dist}
+Release: 72%{?dist}
 License: Public Domain
 
 Group: System Environment/Base
@@ -220,11 +220,17 @@ install -p -m 755 %{SOURCE2} $RPM_BUILD_ROOT%{_bindir}/update-ca-trust
 install -p -m 755 %{SOURCE6} $RPM_BUILD_ROOT%{_bindir}/ca-legacy
 
 # touch ghosted files that will be extracted dynamically
+# Set chmod 444 to use identical permission
 touch $RPM_BUILD_ROOT%{catrustdir}/extracted/pem/tls-ca-bundle.pem
+chmod 444 $RPM_BUILD_ROOT%{catrustdir}/extracted/pem/tls-ca-bundle.pem
 touch $RPM_BUILD_ROOT%{catrustdir}/extracted/pem/email-ca-bundle.pem
+chmod 444 $RPM_BUILD_ROOT%{catrustdir}/extracted/pem/email-ca-bundle.pem
 touch $RPM_BUILD_ROOT%{catrustdir}/extracted/pem/objsign-ca-bundle.pem
+chmod 444 $RPM_BUILD_ROOT%{catrustdir}/extracted/pem/objsign-ca-bundle.pem
 touch $RPM_BUILD_ROOT%{catrustdir}/extracted/openssl/%{openssl_format_trust_bundle}
+chmod 444 $RPM_BUILD_ROOT%{catrustdir}/extracted/openssl/%{openssl_format_trust_bundle}
 touch $RPM_BUILD_ROOT%{catrustdir}/extracted/%{java_bundle}
+chmod 444 $RPM_BUILD_ROOT%{catrustdir}/extracted/%{java_bundle}
 
 # /etc/ssl/certs symlink for 3rd-party tools
 sln ../pki/tls/certs \
@@ -358,6 +364,106 @@ fi
 
 
 %changelog
+*Tue Sep 14 2021 Bob Relyea <rrelyea@redhat.com> - 2021.2.50-72
+- Fix expired certificate.
+-    Removing:
+-     # Certificate "DST Root CA X3"
+
+*Wed Jun 16 2021 Bob Relyea <rrelyea@redhat.com> - 2021.2.50-71
+- Update to CKBI 2.50 from NSS 3.67
+   - version number update only
+
+*Fri Jun 11 2021 Bob Relyea <rrelyea@redhat.com> - 2021.2.48-71
+- Update to CKBI 2.48 from NSS 3.66
+-    Removing:
+-     # Certificate "Verisign Class 3 Public Primary Certification Authority - G3"
+-     # Certificate "GeoTrust Global CA"
+-     # Certificate "GeoTrust Universal CA"
+-     # Certificate "GeoTrust Universal CA 2"
+-     # Certificate "QuoVadis Root CA"
+-     # Certificate "Sonera Class 2 Root CA"
+-     # Certificate "Taiwan GRCA"
+-     # Certificate "GeoTrust Primary Certification Authority"
+-     # Certificate "thawte Primary Root CA"
+-     # Certificate "VeriSign Class 3 Public Primary Certification Authority - G5"
+-     # Certificate "GeoTrust Primary Certification Authority - G3"
+-     # Certificate "thawte Primary Root CA - G2"
+-     # Certificate "thawte Primary Root CA - G3"
+-     # Certificate "GeoTrust Primary Certification Authority - G2"
+-     # Certificate "VeriSign Universal Root Certification Authority"
+-     # Certificate "VeriSign Class 3 Public Primary Certification Authority - G4"
+-     # Certificate "Trustis FPS Root CA"
+-     # Certificate "EE Certification Centre Root CA"
+-     # Certificate "LuxTrust Global Root 2"
+-     # Certificate "Symantec Class 1 Public Primary Certification Authority - G4"
+-     # Certificate "Symantec Class 2 Public Primary Certification Authority - G4"
+-    Adding:
+-     # Certificate "Microsoft ECC Root Certificate Authority 2017"
+-     # Certificate "Microsoft RSA Root Certificate Authority 2017"
+-     # Certificate "e-Szigno Root CA 2017"
+-     # Certificate "certSIGN Root CA G2"
+-     # Certificate "Trustwave Global Certification Authority"
+-     # Certificate "Trustwave Global ECC P256 Certification Authority"
+-     # Certificate "Trustwave Global ECC P384 Certification Authority"
+-     # Certificate "NAVER Global Root Certification Authority"
+-     # Certificate "AC RAIZ FNMT-RCM SERVIDORES SEGUROS"
+-     # Certificate "GlobalSign Secure Mail Root R45"
+-     # Certificate "GlobalSign Secure Mail Root E45"
+-     # Certificate "GlobalSign Root R46"
+-     # Certificate "GlobalSign Root E46"
+-     # Certificate "GLOBALTRUST 2020"
+-     # Certificate "ANF Secure Server Root CA"
+-     # Certificate "Certum EC-384 CA"
+-     # Certificate "Certum Trusted Root CA"
+
+*Tue Jun 09 2020 Bob Relyea <rrelyea@redhat.com> - 2020.2.41-79
+- Update to CKBI 2.41 from NSS 3.53.0
+-    Removing:
+-     # Certificate "AddTrust Low-Value Services Root"
+-     # Certificate "AddTrust External Root"
+-     # Certificate "UTN USERFirst Email Root CA"
+-     # Certificate "Certplus Class 2 Primary CA"
+-     # Certificate "Deutsche Telekom Root CA 2"
+-     # Certificate "Staat der Nederlanden Root CA - G2"
+-     # Certificate "Swisscom Root CA 2"
+-     # Certificate "Certinomis - Root CA"
+-    Adding:
+-     # Certificate "Entrust Root Certification Authority - G4"
+- fix permissions on ghosted files.
+
+*Fri Jun 21 2019 Bob Relyea <rrelyea@redhat.com> - 2019.2.32-76
+- Update to CKBI 2.32 from NSS 3.44
+-   Removing:
+-   # Certificate "Visa eCommerce Root"
+-   # Certificate "AC Raiz Certicamara S.A."
+-   # Certificate "TC TrustCenter Class 3 CA II"
+-   # Certificate "ComSign CA"
+-   # Certificate "S-TRUST Universal Root CA"
+-   # Certificate "TÜRKTRUST Elektronik Sertifika Hizmet Sağlayıcısı H5"
+-   # Certificate "Certplus Root CA G1"
+-   # Certificate "Certplus Root CA G2"
+-   # Certificate "OpenTrust Root CA G1"
+-   # Certificate "OpenTrust Root CA G2"
+-   # Certificate "OpenTrust Root CA G3"
+-  Adding:
+-   # Certificate "GlobalSign Root CA - R6"
+-   # Certificate "OISTE WISeKey Global Root GC CA"
+-   # Certificate "GTS Root R1"
+-   # Certificate "GTS Root R2"
+-   # Certificate "GTS Root R3"
+-   # Certificate "GTS Root R4"
+-   # Certificate "UCA Global G2 Root"
+-   # Certificate "UCA Extended Validation Root"
+-   # Certificate "Certigna Root CA"
+-   # Certificate "emSign Root CA - G1"
+-   # Certificate "emSign ECC Root CA - G3"
+-   # Certificate "emSign Root CA - C1"
+-   # Certificate "emSign ECC Root CA - C3"
+-   # Certificate "Hongkong Post Root CA 3"
+
+* Wed Mar 14 2018 Kai Engert <kaie@redhat.com> - 2018.2.22-70.0
+- Update to CKBI 2.22 from NSS 3.35
+
 * Wed Nov 29 2017 Kai Engert <kaie@redhat.com> - 2017.2.20-71
 - Update to CKBI 2.20 from NSS 3.34.1
 
