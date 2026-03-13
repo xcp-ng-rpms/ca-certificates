@@ -1,3 +1,7 @@
+%global package_speccommit 2270fef0519673b13230c09986706399bb9ec824
+%global usver 2021.2.50
+%global xsver 73
+%global xsrel %{xsver}%{?xscount}%{?xshash}
 %define pkidir %{_sysconfdir}/pki
 %define catrustdir %{_sysconfdir}/pki/ca-trust
 %define classic_tls_bundle ca-bundle.crt
@@ -19,7 +23,7 @@ Name: ca-certificates
 # The files should be taken from a released version of NSS, as published
 # at https://ftp.mozilla.org/pub/mozilla.org/security/nss/releases/
 #
-# The versions that are used by the latest released version of 
+# The versions that are used by the latest released version of
 # Mozilla Firefox should be available from:
 # https://hg.mozilla.org/releases/mozilla-release/raw-file/default/security/nss/lib/ckfw/builtins/nssckbi.h
 # https://hg.mozilla.org/releases/mozilla-release/raw-file/default/security/nss/lib/ckfw/builtins/certdata.txt
@@ -30,16 +34,16 @@ Name: ca-certificates
 # (but these files might have not yet been released).
 #
 # (until 2012.87 the version was based on the cvs revision ID of certdata.txt,
-# but in 2013 the NSS projected was migrated to HG. Old version 2012.87 is 
-# equivalent to new version 2012.1.93, which would break the requirement 
-# to have increasing version numbers. However, the new scheme will work, 
+# but in 2013 the NSS projected was migrated to HG. Old version 2012.87 is
+# equivalent to new version 2012.1.93, which would break the requirement
+# to have increasing version numbers. However, the new scheme will work,
 # because all future versions will start with 2013 or larger.)
 
 Version: 2021.2.50
 # On RHEL 7.x, please keep the release version >= 70
 # When rebasing on Y-Stream (7.y), use 71, 72, 73, ...
 # When rebasing on Z-Stream (7.y.z), use 70.0, 70.1, 70.2, ...
-Release: 72%{?dist}
+Release: %{?xsrel}%{?dist}
 License: Public Domain
 
 Group: System Environment/Base
@@ -73,6 +77,11 @@ BuildRequires: python
 BuildRequires: openssl
 BuildRequires: asciidoc
 BuildRequires: libxslt
+# The pre section run some shell script, thus requries glibc for bash
+# That should be auto detected, but somehow misunderstood in xs8
+# State it explictly here
+Requires(pre): glibc
+Requires(post): libtasn1
 
 %description
 This package contains the set of CA certificates chosen by the
@@ -112,7 +121,7 @@ EOF
  touch %{legacy_default_bundle}
  NUM_LEGACY_DEFAULT=`find certs/legacy-default -type f | wc -l`
  if [ $NUM_LEGACY_DEFAULT -ne 0 ]; then
-     for f in certs/legacy-default/*.crt; do 
+     for f in certs/legacy-default/*.crt; do
        echo "processing $f"
        tbits=`sed -n '/^# openssl-trust/{s/^.*=//;p;}' $f`
        alias=`sed -n '/^# alias=/{s/^.*=//;p;q;}' $f | sed "s/'//g" | sed 's/"//g'`
@@ -132,7 +141,7 @@ EOF
  touch %{legacy_disable_bundle}
  NUM_LEGACY_DISABLE=`find certs/legacy-disable -type f | wc -l`
  if [ $NUM_LEGACY_DISABLE -ne 0 ]; then
-     for f in certs/legacy-disable/*.crt; do 
+     for f in certs/legacy-disable/*.crt; do
        echo "processing $f"
        tbits=`sed -n '/^# openssl-trust/{s/^.*=//;p;}' $f`
        alias=`sed -n '/^# alias=/{s/^.*=//;p;q;}' $f | sed "s/'//g" | sed 's/"//g'`
@@ -151,7 +160,7 @@ EOF
 
  P11FILES=`find certs -name \*.tmp-p11-kit | wc -l`
  if [ $P11FILES -ne 0 ]; then
-   for p in certs/*.tmp-p11-kit; do 
+   for p in certs/*.tmp-p11-kit; do
      cat "$p" >> %{p11_format_bundle}
    done
  fi
@@ -245,17 +254,13 @@ sln %{catrustdir}/extracted/openssl/%{openssl_format_trust_bundle} \
 sln %{catrustdir}/extracted/%{java_bundle} \
     $RPM_BUILD_ROOT%{pkidir}/%{java_bundle}
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-
-
 %pre
 if [ $1 -gt 1 ] ; then
   # Upgrade or Downgrade.
   # If the classic filename is a regular file, then we are upgrading
   # from an old package and we will move it to an .rpmsave backup file.
   # If the filename is a symbolic link, then we are good already.
-  # If the system will later be downgraded to an old package with regular 
+  # If the system will later be downgraded to an old package with regular
   # files, and afterwards updated again to a newer package with symlinks,
   # and the old .rpmsave backup file didn't get cleaned up,
   # then we don't backup again. We keep the older backup file.
@@ -364,351 +369,10 @@ fi
 
 
 %changelog
-*Tue Sep 14 2021 Bob Relyea <rrelyea@redhat.com> - 2021.2.50-72
-- Fix expired certificate.
--    Removing:
--     # Certificate "DST Root CA X3"
+* Tue Nov 11 2025 Lin Liu <lin.liu01@citrix.com> - 2021.2.50-73
+- Rebuild ca-certificates from upstream-packages
+- CP-310102: Requires(pre) glibc and Requires(post) libtasn1
 
-*Wed Jun 16 2021 Bob Relyea <rrelyea@redhat.com> - 2021.2.50-71
-- Update to CKBI 2.50 from NSS 3.67
-   - version number update only
+* Tue Oct 28 2025 Lin Liu <Lin.Liu01@cloud.com> - 2021.2.50-1
+- First imported release
 
-*Fri Jun 11 2021 Bob Relyea <rrelyea@redhat.com> - 2021.2.48-71
-- Update to CKBI 2.48 from NSS 3.66
--    Removing:
--     # Certificate "Verisign Class 3 Public Primary Certification Authority - G3"
--     # Certificate "GeoTrust Global CA"
--     # Certificate "GeoTrust Universal CA"
--     # Certificate "GeoTrust Universal CA 2"
--     # Certificate "QuoVadis Root CA"
--     # Certificate "Sonera Class 2 Root CA"
--     # Certificate "Taiwan GRCA"
--     # Certificate "GeoTrust Primary Certification Authority"
--     # Certificate "thawte Primary Root CA"
--     # Certificate "VeriSign Class 3 Public Primary Certification Authority - G5"
--     # Certificate "GeoTrust Primary Certification Authority - G3"
--     # Certificate "thawte Primary Root CA - G2"
--     # Certificate "thawte Primary Root CA - G3"
--     # Certificate "GeoTrust Primary Certification Authority - G2"
--     # Certificate "VeriSign Universal Root Certification Authority"
--     # Certificate "VeriSign Class 3 Public Primary Certification Authority - G4"
--     # Certificate "Trustis FPS Root CA"
--     # Certificate "EE Certification Centre Root CA"
--     # Certificate "LuxTrust Global Root 2"
--     # Certificate "Symantec Class 1 Public Primary Certification Authority - G4"
--     # Certificate "Symantec Class 2 Public Primary Certification Authority - G4"
--    Adding:
--     # Certificate "Microsoft ECC Root Certificate Authority 2017"
--     # Certificate "Microsoft RSA Root Certificate Authority 2017"
--     # Certificate "e-Szigno Root CA 2017"
--     # Certificate "certSIGN Root CA G2"
--     # Certificate "Trustwave Global Certification Authority"
--     # Certificate "Trustwave Global ECC P256 Certification Authority"
--     # Certificate "Trustwave Global ECC P384 Certification Authority"
--     # Certificate "NAVER Global Root Certification Authority"
--     # Certificate "AC RAIZ FNMT-RCM SERVIDORES SEGUROS"
--     # Certificate "GlobalSign Secure Mail Root R45"
--     # Certificate "GlobalSign Secure Mail Root E45"
--     # Certificate "GlobalSign Root R46"
--     # Certificate "GlobalSign Root E46"
--     # Certificate "GLOBALTRUST 2020"
--     # Certificate "ANF Secure Server Root CA"
--     # Certificate "Certum EC-384 CA"
--     # Certificate "Certum Trusted Root CA"
-
-*Tue Jun 09 2020 Bob Relyea <rrelyea@redhat.com> - 2020.2.41-79
-- Update to CKBI 2.41 from NSS 3.53.0
--    Removing:
--     # Certificate "AddTrust Low-Value Services Root"
--     # Certificate "AddTrust External Root"
--     # Certificate "UTN USERFirst Email Root CA"
--     # Certificate "Certplus Class 2 Primary CA"
--     # Certificate "Deutsche Telekom Root CA 2"
--     # Certificate "Staat der Nederlanden Root CA - G2"
--     # Certificate "Swisscom Root CA 2"
--     # Certificate "Certinomis - Root CA"
--    Adding:
--     # Certificate "Entrust Root Certification Authority - G4"
-- fix permissions on ghosted files.
-
-*Fri Jun 21 2019 Bob Relyea <rrelyea@redhat.com> - 2019.2.32-76
-- Update to CKBI 2.32 from NSS 3.44
--   Removing:
--   # Certificate "Visa eCommerce Root"
--   # Certificate "AC Raiz Certicamara S.A."
--   # Certificate "TC TrustCenter Class 3 CA II"
--   # Certificate "ComSign CA"
--   # Certificate "S-TRUST Universal Root CA"
--   # Certificate "TÜRKTRUST Elektronik Sertifika Hizmet Sağlayıcısı H5"
--   # Certificate "Certplus Root CA G1"
--   # Certificate "Certplus Root CA G2"
--   # Certificate "OpenTrust Root CA G1"
--   # Certificate "OpenTrust Root CA G2"
--   # Certificate "OpenTrust Root CA G3"
--  Adding:
--   # Certificate "GlobalSign Root CA - R6"
--   # Certificate "OISTE WISeKey Global Root GC CA"
--   # Certificate "GTS Root R1"
--   # Certificate "GTS Root R2"
--   # Certificate "GTS Root R3"
--   # Certificate "GTS Root R4"
--   # Certificate "UCA Global G2 Root"
--   # Certificate "UCA Extended Validation Root"
--   # Certificate "Certigna Root CA"
--   # Certificate "emSign Root CA - G1"
--   # Certificate "emSign ECC Root CA - G3"
--   # Certificate "emSign Root CA - C1"
--   # Certificate "emSign ECC Root CA - C3"
--   # Certificate "Hongkong Post Root CA 3"
-
-* Wed Mar 14 2018 Kai Engert <kaie@redhat.com> - 2018.2.22-70.0
-- Update to CKBI 2.22 from NSS 3.35
-
-* Wed Nov 29 2017 Kai Engert <kaie@redhat.com> - 2017.2.20-71
-- Update to CKBI 2.20 from NSS 3.34.1
-
-* Thu Oct 26 2017 Kai Engert <kaie@redhat.com> - 2017.2.18-71
-- Update to CKBI 2.18 (pre-release snapshot)
-
-* Tue Sep 26 2017 Kai Engert <kaie@redhat.com> - 2017.2.16-71
-- Update to CKBI 2.16 from NSS 3.32. In addition to removals/additions,
-  Mozilla removed code signing trust from all CAs (rhbz#1472933)
-
-* Fri Apr 28 2017 Kai Engert <kaie@redhat.com> - 2017.2.14-71
-- Update to CKBI 2.14 from NSS 3.30.2
-
-* Fri Mar 10 2017 Kai Engert <kaie@redhat.com> - 2017.2.11-73
-- No longer trust legacy CAs
-
-* Fri Mar 10 2017 Kai Engert <kaie@redhat.com> - 2017.2.11-72
-- Changed the packaged bundle to use the flexible p11-kit-object-v1 file format,
-  as a preparation to fix bugs in the interaction between p11-kit-trust and
-  Mozilla applications, such as Firefox, Thunderbird etc.
-- For CAs trusted by Mozilla, set attribute nss-mozilla-ca-policy: true
-- Require p11-kit 0.23.5
-- Added an utility to help with comparing output of the trust dump command.
-
-* Tue Jan 17 2017 Kai Engert <kaie@redhat.com> - 2017.2.11-71
-- Update to CKBI 2.11 from NSS 3.28.1 with legacy modifications.
-- Use comments in extracted bundle files.
-- Change packaging script to support empty legacy bundles.
-
-* Tue May 10 2016 Kai Engert <kaie@redhat.com> - 2016.2.6-73
-- Use sln, not ln, to avoid the dependency on coreutils (rhbz#1328586)
-
-* Mon Apr 25 2016 Kai Engert <kaie@redhat.com> - 2015.2.6-72
-- Fixed a typo in a manual page (rhbz#1303960)
-
-* Wed Jan 27 2016 Kai Engert <kaie@redhat.com> - 2015.2.6-71
-- Update to CKBI 2.6 from NSS 3.21 with legacy modifications.
-
-* Thu Apr 23 2015 Kai Engert <kaie@redhat.com> - 2015.2.4-71
-- Update to CKBI 2.4 from NSS 3.18.1 with legacy modifications.
-
-* Tue Apr 14 2015 Kai Engert <kaie@redhat.com> - 2015.2.3-72
-- Fix a typo in the ca-legacy manual page (rhbz#1208850)
-
-* Tue Mar 31 2015 Kai Engert <kaie@redhat.com> - 2015.2.3-71
-- Update to CKBI 2.3 from NSS 3.18 with legacy modifications.
-- Add an alternative version of the "Thawte Premium Server CA" root,
-  which carries a SHA1-RSA signature, to allow OpenJDK to verify applets
-  which contain that version of the root certificate.
-  This change doesn't add trust for another key, because both versions
-  of the certificate use the same public key (rhbz#1170982).
-- Add a patch to the source RPM that documents the changes from the
-  upstream version.
-- Introduce the ca-legacy utility, a manual page, and the ca-legacy.conf
-  configuration file.
-- The new scriptlets require the coreutils package.
-- Remove the obsolete blacklist.txt file.
-
-* Wed Sep 17 2014 Stef Walter <stefw@redhat.com> - 2014.1.98-72
-- The BasicConstraints fix for Entrust Root is no longer necessary.
-  In addition it was invalid for p11-kit 0.20.x. rhbz#1130485
-
-* Wed Sep 03 2014 Kai Engert <kaie@redhat.com> - 2014.1.98-71
-- Update to CKBI 1.98 from NSS 3.16.1
-- building on RHEL 7 no longer requires java-openjdk
-- added more detailed instructions for release numbers on RHEL branches,
-  to avoid problems when rebasing on both z- and y-stream branches.
-
-* Fri Dec 27 2013 Daniel Mach <dmach@redhat.com> - 2013.1.95-71
-- Mass rebuild 2013-12-27
-
-* Tue Dec 17 2013 Kai Engert <kaie@redhat.com> - 2013.1.95-70.1
-- Update to CKBI 1.95 from NSS 3.15.3.1
-
-* Fri Oct 18 2013 Kai Engert <kaie@redhat.com> - 2013.1.94-70.1
-- Only create backup files if there is an original file, rhbz#999017
-
-* Tue Sep 03 2013 Kai Engert <kaie@redhat.com> - 2013.1.94-70.0
-- Update to CKBI 1.94 from NSS 3.15
-
-* Wed Jul 17 2013 Kai Engert <kaie@redhat.com> - 2012.87-70.1
-- improve manpage
-
-* Tue Jul 09 2013 Kai Engert <kaie@redhat.com> - 2012.87-70.0
-- use a release version that 's larger than on rhel 6
-
-* Tue Jul 09 2013 Kai Engert <kaie@redhat.com> - 2012.87-10.4
-- clarification updates to manual page
-
-* Mon Jul 08 2013 Kai Engert <kaie@redhat.com> - 2012.87-10.3
-- added a manual page and related build requirements
-- simplify the README files now that we have a manual page
-- set a certificate alias in trusted bundle (thanks to Ludwig Nussel)
-
-* Mon May 27 2013 Kai Engert <kaie@redhat.com> - 2012.87-10.2
-- use correct command in README files, rhbz#961809
-
-* Mon Apr 22 2013 Kai Engert <kaie@redhat.com> - 2012.87-10.1
-- Add myself as contributor to certdata2.pem.py and remove use of rcs/ident.
-  (thanks to Michael Shuler for suggesting to do so)
-- Update source URLs and comments, add source file for version information.
-
-* Wed Mar 27 2013 Kai Engert <kaie@redhat.com> - 2012.87-10.0
-- Use both label and serial to identify cert during conversion, rhbz#927601 
-
-* Tue Mar 19 2013 Kai Engert <kaie@redhat.com> - 2012.87-9.fc19.1
-- adjust to changed and new functionality provided by p11-kit 0.17.3
-- updated READMEs to describe the new directory-specific treatment of files
-- ship a new file that contains certificates with neutral trust
-- ship a new file that contains distrust objects, and also staple a 
-  basic constraint extension to one legacy root contained in the
-  Mozilla CA list
-- adjust the build script to dynamically produce most of above files
-- add and own the anchors and blacklist subdirectories
-- file generate-cacerts.pl is no longer required
-
-* Fri Mar 08 2013 Kai Engert <kaie@redhat.com> - 2012.87-9
-- Major rework for the Fedora SharedSystemCertificates feature.
-- Only ship a PEM bundle file using the BEGIN TRUSTED CERTIFICATE file format.
-- Require the p11-kit package that contains tools to automatically create
-  other file format bundles.
-- Convert old file locations to symbolic links that point to dynamically
-  generated files.
-- Old files, which might have been locally modified, will be saved in backup 
-  files with .rpmsave extension.
-- Added a update-ca-certificates script which can be used to regenerate
-  the merged trusted output.
-- Refer to the various README files that have been added for more detailed
-  explanation of the new system.
-- No longer require rsc for building.
-- Add explanation for the future version numbering scheme,
-  because the old numbering scheme was based on upstream using cvs,
-  which is no longer true, and therefore can no longer be used.
-- Includes changes from rhbz#873369.
-
-* Thu Mar 07 2013 Kai Engert <kaie@redhat.com> - 2012.87-2.fc19.1
-- Ship trust bundle file in /usr/share/pki/ca-trust-source/, temporarily in addition.
-  This location will soon become the only place containing this file.
-
-* Wed Feb 13 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2012.87-2
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
-
-* Fri Jan 04 2013 Paul Wouters <pwouters@redhat.com> - 2012.87-1
-- Updated to r1.87 to blacklist mis-issued turktrust CA certs
-
-* Wed Oct 24 2012 Paul Wouters <pwouters@redhat.com> - 2012.86-2
-- Updated blacklist with 20 entries (Diginotar, Trustwave, Comodo(?)
-- Fix to certdata2pem.py to also check for CKT_NSS_NOT_TRUSTED 
-
-* Tue Oct 23 2012 Paul Wouters <pwouters@redhat.com> - 2012.86-1
-- update to r1.86
-
-* Mon Jul 23 2012 Joe Orton <jorton@redhat.com> - 2012.85-2
-- add openssl to BuildRequires
-
-* Mon Jul 23 2012 Joe Orton <jorton@redhat.com> - 2012.85-1
-- update to r1.85
-
-* Wed Jul 18 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2012.81-2
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
-
-* Mon Feb 13 2012 Joe Orton <jorton@redhat.com> - 2012.81-1
-- update to r1.81
-
-* Thu Jan 12 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2011.80-2
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
-
-* Wed Nov  9 2011 Joe Orton <jorton@redhat.com> - 2011.80-1
-- update to r1.80
-- fix handling of certs with dublicate Subject names (#733032)
-
-* Thu Sep  1 2011 Joe Orton <jorton@redhat.com> - 2011.78-1
-- update to r1.78, removing trust from DigiNotar root (#734679)
-
-* Wed Aug  3 2011 Joe Orton <jorton@redhat.com> - 2011.75-1
-- update to r1.75
-
-* Wed Apr 20 2011 Joe Orton <jorton@redhat.com> - 2011.74-1
-- update to r1.74
-
-* Tue Feb 08 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2011.70-2
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
-
-* Wed Jan 12 2011 Joe Orton <jorton@redhat.com> - 2011.70-1
-- update to r1.70
-
-* Tue Nov  9 2010 Joe Orton <jorton@redhat.com> - 2010.65-3
-- update to r1.65
-
-* Wed Apr  7 2010 Joe Orton <jorton@redhat.com> - 2010.63-3
-- package /etc/ssl/certs symlink for third-party apps (#572725)
-
-* Wed Apr  7 2010 Joe Orton <jorton@redhat.com> - 2010.63-2
-- rebuild
-
-* Wed Apr  7 2010 Joe Orton <jorton@redhat.com> - 2010.63-1
-- update to certdata.txt r1.63
-- use upstream RCS version in Version
-
-* Fri Mar 19 2010 Joe Orton <jorton@redhat.com> - 2010-4
-- fix ca-bundle.crt (#575111)
-
-* Thu Mar 18 2010 Joe Orton <jorton@redhat.com> - 2010-3
-- update to certdata.txt r1.58
-- add /etc/pki/tls/certs/ca-bundle.trust.crt using 'TRUSTED CERTICATE' format
-- exclude ECC certs from the Java cacerts database
-- catch keytool failures
-- fail parsing certdata.txt on finding untrusted but not blacklisted cert
-
-* Fri Jan 15 2010 Joe Orton <jorton@redhat.com> - 2010-2
-- fix Java cacert database generation: use Subject rather than Issuer
-  for alias name; add diagnostics; fix some alias names.
-
-* Mon Jan 11 2010 Joe Orton <jorton@redhat.com> - 2010-1
-- adopt Python certdata.txt parsing script from Debian
-
-* Fri Jul 24 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2009-2
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
-
-* Wed Jul 22 2009 Joe Orton <jorton@redhat.com> 2009-1
-- update to certdata.txt r1.53
-
-* Mon Feb 23 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2008-8
-- Rebuilt for https://fedoraproject.org/wiki/Fedora_11_Mass_Rebuild
-
-* Tue Oct 14 2008 Joe Orton <jorton@redhat.com> 2008-7
-- update to certdata.txt r1.49
-
-* Wed Jun 25 2008 Thomas Fitzsimmons <fitzsim@redhat.com> - 2008-6
-- Change generate-cacerts.pl to produce pretty aliases.
-
-* Mon Jun  2 2008 Joe Orton <jorton@redhat.com> 2008-5
-- include /etc/pki/tls/cert.pem symlink to ca-bundle.crt
-
-* Tue May 27 2008 Joe Orton <jorton@redhat.com> 2008-4
-- use package name for temp dir, recreate it in prep
-
-* Tue May 27 2008 Joe Orton <jorton@redhat.com> 2008-3
-- fix source script perms
-- mark packaged files as config(noreplace)
-
-* Tue May 27 2008 Joe Orton <jorton@redhat.com> 2008-2
-- add (but don't use) mkcabundle.pl
-- tweak description
-- use /usr/bin/keytool directly; BR java-openjdk
-
-* Tue May 27 2008 Joe Orton <jorton@redhat.com> 2008-1
-- Initial build (#448497)
