@@ -43,7 +43,7 @@ Version: 2021.2.50
 # On RHEL 7.x, please keep the release version >= 70
 # When rebasing on Y-Stream (7.y), use 71, 72, 73, ...
 # When rebasing on Z-Stream (7.y.z), use 70.0, 70.1, 70.2, ...
-Release: %{?xsrel}%{?dist}
+Release: %{?xsrel}.1%{?dist}
 License: Public Domain
 
 Group: System Environment/Base
@@ -77,11 +77,6 @@ BuildRequires: python
 BuildRequires: openssl
 BuildRequires: asciidoc
 BuildRequires: libxslt
-# The pre section run some shell script, thus requries glibc for bash
-# That should be auto detected, but somehow misunderstood in xs8
-# State it explictly here
-Requires(pre): glibc
-Requires(post): libtasn1
 
 %description
 This package contains the set of CA certificates chosen by the
@@ -369,6 +364,9 @@ fi
 
 
 %changelog
+* Fri Jul 10 2026 Philippe Coval <philippe.coval@vates.tech> - 2021.2.50-73.1
+- Remove reqs on bash deps for scriptlet (workaround for rhbz#1402023 in bash)
+
 * Tue Nov 11 2025 Lin Liu <lin.liu01@citrix.com> - 2021.2.50-73
 - Rebuild ca-certificates from upstream-packages
 - CP-310102: Requires(pre) glibc and Requires(post) libtasn1
