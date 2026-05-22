@@ -43,7 +43,7 @@ Version: 2021.2.50
 # On RHEL 7.x, please keep the release version >= 70
 # When rebasing on Y-Stream (7.y), use 71, 72, 73, ...
 # When rebasing on Z-Stream (7.y.z), use 70.0, 70.1, 70.2, ...
-Release: %{?xsrel}.1%{?dist}
+Release: %{?xsrel}.1~XCPNG2698.1%{?dist}
 License: Public Domain
 
 Group: System Environment/Base
