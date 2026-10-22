@@ -1,55 +1,18 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Philippe Coval <philippe.coval@vates.tech>
-Date: Thu, 22 Oct 2026 10:09:51 +0200
-Subject: [PATCH] remove-emsign-ecc-root-ca-g3
-
-[Philippe Coval]
-
-This (uncredited, see origin) patch is backported to XCP-ng's current
-version of certdata.txt
-
-Remove certificate due to compromised intermediates signed by this root:
-
-    emSign ECC Root CA - G3
-    Intermediates signed by this root have been compromised
-    Fingerprint (SHA-256): 86:A1:EC:BA:08:9C:4A:8D:3B:BE:27:34:C6:12:BA:34:1D:81:3E:04:3C:F9:E8:A8:62:CD:5C:57:A3:6B:BE:6B
-    Fingerprint (SHA1): 30:43:FA:4F:F2:57:DC:A0:C3:80:EE:2E:58:EA:78:B2:3F:E6:BB:C1
-
-Before:
-
-    curl https://dv-g3b-emudhra.we-have-a-problem.com/
-    Your client successfully connected to the site. That's bad!
-
-After:
-
-   curl https://dv-g3b-aaa-emudhra.we-have-a-problem.com/
-   curl: (60) SSL certificate problem: unable to get local issuer certificate
-   More details here: https://curl.se/docs/sslcerts.html
-
-Related-to: https://groups.google.com/a/mozilla.org/g/dev-security-policy/c/0R3XLJL6FuE/m/0XofdebrAAAJ
-Origin: https://git.almalinux.org/rpms/ca-certificates/commit/9d6adcd82013c9e8bf2dbd9142e0914087140f73#diff-1a70b839a169ca000658a6cdd5666d255d711299
-Thanks-to: Krenželok František
-Related-to: XCPNG-3964
-Signed-off-by: Philippe Coval <philippe.coval@vates.tech>
-
-diff --git a/certs/certdata.txt b/certs/certdata.txt
-index fdcada81db1e..3f7eee9216cf 100644
---- a/certs/certdata.txt
-+++ b/certs/certdata.txt
-@@ -18903,124 +18903,6 @@ CKA_TRUST_EMAIL_PROTECTION CK_TRUST CKT_NSS_TRUSTED_DELEGATOR
- CKA_TRUST_CODE_SIGNING CK_TRUST CKT_NSS_MUST_VERIFY_TRUST
+--- certdata.txt
++++ certdata.txt
+@@ -57851,125 +57851,6 @@ CKA_TRUST_EMAIL_PROTECTION CK_TRUST CKT_NSS_MUST_VERIFY_TRUST
+ CKA_TRUST_CODE_SIGNING CK_TRUST CKT_NSS_TRUSTED_DELEGATOR
  CKA_TRUST_STEP_UP_APPROVED CK_BBOOL CK_FALSE
  
--#
+-# Microsoft Code Signing Only Certificate
 -# Certificate "emSign ECC Root CA - G3"
--#
 -# Issuer: CN=emSign ECC Root CA - G3,O=eMudhra Technologies Limited,OU=emSign PKI,C=IN
 -# Serial Number:3c:f6:07:a9:68:70:0e:da:8b:84
 -# Subject: CN=emSign ECC Root CA - G3,O=eMudhra Technologies Limited,OU=emSign PKI,C=IN
 -# Not Valid Before: Sun Feb 18 18:30:00 2018
--# Not Valid After : Wed Feb 18 18:30:00 2043
--# Fingerprint (SHA-256): 86:A1:EC:BA:08:9C:4A:8D:3B:BE:27:34:C6:12:BA:34:1D:81:3E:04:3C:F9:E8:A8:62:CD:5C:57:A3:6B:BE:6B
--# Fingerprint (SHA1): 30:43:FA:4F:F2:57:DC:A0:C3:80:EE:2E:58:EA:78:B2:3F:E6:BB:C1
+-# Not Valid After: Wed Feb 18 18:30:00 2043
+-# Fingerprint (MD5): ce:0b:72:d1:9f:88:8e:d0:50:03:e8:e3:b8:8b:67:40
+-# Fingerprint (SHA1): 30:43:fa:4f:f2:57:dc:a0:c3:80:ee:2e:58:ea:78:b2:3f:e6:bb:c1
 -CKA_CLASS CK_OBJECT_CLASS CKO_CERTIFICATE
 -CKA_TOKEN CK_BBOOL CK_TRUE
 -CKA_PRIVATE CK_BBOOL CK_FALSE
@@ -118,18 +81,19 @@ index fdcada81db1e..3f7eee9216cf 100644
 -\370\226\315\107\250\202\362\026\125\167\044\176\022\020\225\004
 -\054\243
 -END
--CKA_NSS_MOZILLA_CA_POLICY CK_BBOOL CK_TRUE
+-CKA_NSS_MOZILLA_CA_POLICY CK_BBOOL CK_FALSE
 -CKA_NSS_SERVER_DISTRUST_AFTER CK_BBOOL CK_FALSE
 -CKA_NSS_EMAIL_DISTRUST_AFTER CK_BBOOL CK_FALSE
 -
+-# Microsoft Code Signing Only Certificate
 -# Trust for "emSign ECC Root CA - G3"
 -# Issuer: CN=emSign ECC Root CA - G3,O=eMudhra Technologies Limited,OU=emSign PKI,C=IN
 -# Serial Number:3c:f6:07:a9:68:70:0e:da:8b:84
 -# Subject: CN=emSign ECC Root CA - G3,O=eMudhra Technologies Limited,OU=emSign PKI,C=IN
 -# Not Valid Before: Sun Feb 18 18:30:00 2018
--# Not Valid After : Wed Feb 18 18:30:00 2043
--# Fingerprint (SHA-256): 86:A1:EC:BA:08:9C:4A:8D:3B:BE:27:34:C6:12:BA:34:1D:81:3E:04:3C:F9:E8:A8:62:CD:5C:57:A3:6B:BE:6B
--# Fingerprint (SHA1): 30:43:FA:4F:F2:57:DC:A0:C3:80:EE:2E:58:EA:78:B2:3F:E6:BB:C1
+-# Not Valid After: Wed Feb 18 18:30:00 2043
+-# Fingerprint (MD5): ce:0b:72:d1:9f:88:8e:d0:50:03:e8:e3:b8:8b:67:40
+-# Fingerprint (SHA1): 30:43:fa:4f:f2:57:dc:a0:c3:80:ee:2e:58:ea:78:b2:3f:e6:bb:c1
 -CKA_CLASS CK_OBJECT_CLASS CKO_NSS_TRUST
 -CKA_TOKEN CK_BBOOL CK_TRUE
 -CKA_PRIVATE CK_BBOOL CK_FALSE
@@ -154,10 +118,11 @@ index fdcada81db1e..3f7eee9216cf 100644
 -CKA_SERIAL_NUMBER MULTILINE_OCTAL
 -\002\012\074\366\007\251\150\160\016\332\213\204
 -END
--CKA_TRUST_SERVER_AUTH CK_TRUST CKT_NSS_TRUSTED_DELEGATOR
--CKA_TRUST_EMAIL_PROTECTION CK_TRUST CKT_NSS_TRUSTED_DELEGATOR
--CKA_TRUST_CODE_SIGNING CK_TRUST CKT_NSS_MUST_VERIFY_TRUST
+-CKA_TRUST_SERVER_AUTH CK_TRUST CKT_NSS_MUST_VERIFY_TRUST
+-CKA_TRUST_EMAIL_PROTECTION CK_TRUST CKT_NSS_MUST_VERIFY_TRUST
+-CKA_TRUST_CODE_SIGNING CK_TRUST CKT_NSS_TRUSTED_DELEGATOR
 -CKA_TRUST_STEP_UP_APPROVED CK_BBOOL CK_FALSE
- 
- #
- # Certificate "emSign Root CA - C1"
+-
+ # Microsoft Code Signing Only Certificate
+ # Certificate "emSign Root CA - C2"
+ # Issuer: CN=emSign Root CA - C2,O=eMudhra Inc,OU=emSign PKI,C=US
