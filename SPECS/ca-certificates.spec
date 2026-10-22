@@ -43,7 +43,7 @@ Version: 2021.2.50
 # On RHEL 7.x, please keep the release version >= 70
 # When rebasing on Y-Stream (7.y), use 71, 72, 73, ...
 # When rebasing on Z-Stream (7.y.z), use 70.0, 70.1, 70.2, ...
-Release: %{?xsrel}.1%{?dist}
+Release: %{?xsrel}.2%{?dist}
 License: Public Domain
 
 Group: System Environment/Base
@@ -68,11 +68,16 @@ Source16: README.pem
 Source17: README.src
 Source18: README.ca-certificates
 
+# XCP-ng's security fixes
+Patch0: remove-aaa-certificate-services.patch
+Patch1: remove-emsign-ecc-root-ca-g3.patch
+
 BuildArch: noarch
 
 Requires: p11-kit >= 0.23.5
 Requires: p11-kit-trust >= 0.23.5
 BuildRequires: perl
+BuildRequires: patch
 BuildRequires: python
 BuildRequires: openssl
 BuildRequires: asciidoc
@@ -90,10 +95,13 @@ mkdir %{name}/certs/legacy-default
 mkdir %{name}/certs/legacy-disable
 mkdir %{name}/java
 
+cp %{SOURCE0} %{name}/certs/certdata.txt
+%patch -P 0 -p1 -d %{name} -b remove-aaa-certificate-services
+%patch -P 1 -p1 -d %{name} -b remove-emsign-ecc-root-ca-g3
+
 %build
 pushd %{name}/certs
  pwd
- cp %{SOURCE0} .
  python %{SOURCE4} >c2p.log 2>c2p.err
 popd
 pushd %{name}
@@ -364,6 +372,10 @@ fi
 
 
 %changelog
+* Thu Oct 22 2026 Philippe Coval <philippe.coval@vates.tech> - 2021.2.50-73.2
+- Removing: AAA Certificate Services root CA (Krenželok František)
+- Removing: emSign ECC Root CA - G3 from Microsoft Code Signing certificates (Krenželok František)
+
 * Fri Jul 10 2026 Philippe Coval <philippe.coval@vates.tech> - 2021.2.50-73.1
 - Remove reqs on bash deps for scriptlet (workaround for rhbz#1402023 in bash)
 
