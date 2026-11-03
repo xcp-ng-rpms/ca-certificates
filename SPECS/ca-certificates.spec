@@ -1,7 +1,7 @@
 %global package_speccommit dacf1f4f282ed41ef0e0706d2608be2a4f568533
 %global usver 2026.2.92
 %global xsver 2
-%global xsrel %{xsver}%{?xscount}%{?xshash}
+%global xsrel %{xsver}.1%{?xscount}%{?xshash}
 %define pkidir %{_sysconfdir}/pki
 %define catrustdir %{_sysconfdir}/pki/ca-trust
 %define classic_tls_bundle ca-bundle.crt
@@ -323,6 +323,10 @@ ln -s %{catrustdir}/extracted/pem/tls-ca-bundle.pem \
 ln -s %{catrustdir}/extracted/pem/tls-ca-bundle.pem \
     $RPM_BUILD_ROOT%{pkidir}/tls/certs/ca-certificates.crt
 
+%clean
+/usr/bin/chmod u+w $RPM_BUILD_ROOT%{catrustdir}/extracted/pem/directory-hash
+rm -rf $RPM_BUILD_ROOT
+
 %pre
 if [ $1 -gt 1 ] ; then
   # Remove the old symlinks
@@ -454,35 +458,36 @@ fi
 
 
 %changelog
-# * Tue Nov 03 2026 Philippe Coval <philippe.coval@vates.tech> - 2026.2.92-2.1
-# - Drop XCP-ng downstream changes not needed anymore
-# - Rebase on 2026.2.92-2
-# - *** Upstream changelog ***
-#   * Thu Oct 22 2026 Alex Brett <alex.brett@citrix.com> - 2026.2.92-2
-#   - CP-315380: Adjust build to be compatible with XS8
+* Tue Nov 03 2026 Philippe Coval <philippe.coval@vates.tech> - 2026.2.92-2.1
+- Add clean directive to fix build from source
+- Drop XCP-ng downstream changes not needed anymore
+- Rebase on 2026.2.92-2
+- *** Upstream changelog ***
+  * Thu Oct 22 2026 Alex Brett <alex.brett@citrix.com> - 2026.2.92-2
+  - CP-315380: Adjust build to be compatible with XS8
 
-#   * Wed Oct 21 2026 Alex Brett <alex.brett@citrix.com> - 2026.2.92-1
-#   - CP-315380: Update certificate data to 2026.2.92
-#   - CP-315380: Remove AAA Certificate Services root CA
-#   - CP-315380: Remove emSign ECC Root CA - G3 from Microsoft Code Signing certificates
+  * Wed Oct 21 2026 Alex Brett <alex.brett@citrix.com> - 2026.2.92-1
+  - CP-315380: Update certificate data to 2026.2.92
+  - CP-315380: Remove AAA Certificate Services root CA
+  - CP-315380: Remove emSign ECC Root CA - G3 from Microsoft Code Signing certificates
 
-#    * Fri Jan 17 2025 Andrew Cooper <andrew.cooper3@citrix.com> - 2024.2.72-3
-#    - Fix spec file warnings and errors
+   * Fri Jan 17 2025 Andrew Cooper <andrew.cooper3@citrix.com> - 2024.2.72-3
+   - Fix spec file warnings and errors
 
-#   * Tue Jan 14 2025 Alex Brett <alex.brett@cloud.com> - 2024.2.72-2
-#   - CP-53127: Resync spec with upstream and fix issue with pre scriptlet
+  * Tue Jan 14 2025 Alex Brett <alex.brett@cloud.com> - 2024.2.72-2
+  - CP-53127: Resync spec with upstream and fix issue with pre scriptlet
 
-#   * Mon Jan 13 2025 Alex Brett <alex.brett@cloud.com> - 2024.2.72-1
-#   - CP-53096: Update certificate data to 2024.2.72
+  * Mon Jan 13 2025 Alex Brett <alex.brett@cloud.com> - 2024.2.72-1
+  - CP-53096: Update certificate data to 2024.2.72
 
-#   * Mon Jan 06 2025 Stephen Cheng <stephen.cheng@cloud.com> - 2023.2.60-3
-#   - CP-51666: Fix rpmlint error
+  * Mon Jan 06 2025 Stephen Cheng <stephen.cheng@cloud.com> - 2023.2.60-3
+  - CP-51666: Fix rpmlint error
 
-#   * Fri Jan 03 2025 Stephen Cheng <stephen.cheng@cloud.com> - 2023.2.60-2
-#   - Remove certificates from directory-hash
+  * Fri Jan 03 2025 Stephen Cheng <stephen.cheng@cloud.com> - 2023.2.60-2
+  - Remove certificates from directory-hash
 
-#   * Wed Jul 12 2023 Tim Smith <tim.smith@citrix.com> - 2023.2.60-1
-#   - First imported release
+  * Wed Jul 12 2023 Tim Smith <tim.smith@citrix.com> - 2023.2.60-1
+  - First imported release
 
 * Thu Oct 22 2026 Philippe Coval <philippe.coval@vates.tech> - 2021.2.50-73.2
 - Removing: AAA Certificate Services root CA (Krenželok František)
