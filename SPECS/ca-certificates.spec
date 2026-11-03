@@ -42,7 +42,7 @@ Name: ca-certificates
 # because all future versions will start with 2013 or larger.)
 
 Version: 2026.2.92
-Release: %{?xsrel}%{?dist}
+Release: %{?xsrel}~XCPNG3977.1%{?dist}
 License: MIT AND GPL-2.0-or-later
 
 URL: https://fedoraproject.org/wiki/CA-Certificates
