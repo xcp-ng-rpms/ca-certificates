@@ -1,15 +1,17 @@
-%global package_speccommit 2270fef0519673b13230c09986706399bb9ec824
-%global usver 2021.2.50
-%global xsver 73
+%global package_speccommit dacf1f4f282ed41ef0e0706d2608be2a4f568533
+%global usver 2026.2.92
+%global xsver 2
 %global xsrel %{xsver}%{?xscount}%{?xshash}
 %define pkidir %{_sysconfdir}/pki
 %define catrustdir %{_sysconfdir}/pki/ca-trust
 %define classic_tls_bundle ca-bundle.crt
-%define openssl_format_trust_bundle ca-bundle.trust.crt
 %define p11_format_bundle ca-bundle.trust.p11-kit
 %define legacy_default_bundle ca-bundle.legacy.default.crt
 %define legacy_disable_bundle ca-bundle.legacy.disable.crt
 %define java_bundle java/cacerts
+
+# Do not build documentation by default
+%bcond_with docs
 
 Summary: The Mozilla CA root certificate bundle
 Name: ca-certificates
@@ -39,15 +41,11 @@ Name: ca-certificates
 # to have increasing version numbers. However, the new scheme will work,
 # because all future versions will start with 2013 or larger.)
 
-Version: 2021.2.50
-# On RHEL 7.x, please keep the release version >= 70
-# When rebasing on Y-Stream (7.y), use 71, 72, 73, ...
-# When rebasing on Z-Stream (7.y.z), use 70.0, 70.1, 70.2, ...
-Release: %{?xsrel}.2%{?dist}
-License: Public Domain
+Version: 2026.2.92
+Release: %{?xsrel}%{?dist}
+License: MIT AND GPL-2.0-or-later
 
-Group: System Environment/Base
-URL: http://www.mozilla.org/
+URL: https://fedoraproject.org/wiki/CA-Certificates
 
 #Please always update both certdata.txt and nssckbi.h
 Source0: certdata.txt
@@ -65,23 +63,34 @@ Source13: README.extr
 Source14: README.java
 Source15: README.openssl
 Source16: README.pem
-Source17: README.src
-Source18: README.ca-certificates
-
-# XCP-ng's security fixes
-Patch0: remove-aaa-certificate-services.patch
-Patch1: remove-emsign-ecc-root-ca-g3.patch
+Source17: README.edk2
+Source18: README.src
+Source19: README.etcssl
 
 BuildArch: noarch
 
-Requires: p11-kit >= 0.23.5
-Requires: p11-kit-trust >= 0.23.5
-BuildRequires: perl
-BuildRequires: patch
-BuildRequires: python
+Requires(post): bash
+Requires(post): findutils
+Requires(post): grep
+Requires(post): sed
+Requires(post): coreutils
+Requires: bash
+Requires: grep
+Requires: sed
+Requires(post): p11-kit >= 0.24
+Requires(post): p11-kit-trust >= 0.24
+Requires: p11-kit >= 0.24
+Requires: p11-kit-trust >= 0.24
+Requires: libffi
+Requires(post): libffi
+
+BuildRequires: perl-interpreter
+BuildRequires: python3
 BuildRequires: openssl
+%if %{with docs}
 BuildRequires: asciidoc
-BuildRequires: libxslt
+BuildRequires: xmlto
+%endif
 
 %description
 This package contains the set of CA certificates chosen by the
@@ -95,14 +104,11 @@ mkdir %{name}/certs/legacy-default
 mkdir %{name}/certs/legacy-disable
 mkdir %{name}/java
 
-cp %{SOURCE0} %{name}/certs/certdata.txt
-%patch -P 0 -p1 -d %{name} -b remove-aaa-certificate-services
-%patch -P 1 -p1 -d %{name} -b remove-emsign-ecc-root-ca-g3
-
 %build
 pushd %{name}/certs
  pwd
- python %{SOURCE4} >c2p.log 2>c2p.err
+ cp %{SOURCE0} .
+ python3 %{SOURCE4} >c2p.log 2>c2p.err
 popd
 pushd %{name}
  (
@@ -172,13 +178,15 @@ EOF
 popd
 
 #manpage
+%if %{with docs}
 cp %{SOURCE10} %{name}/update-ca-trust.8.txt
-asciidoc.py -v -d manpage -b docbook %{name}/update-ca-trust.8.txt
-xsltproc --nonet -o %{name}/update-ca-trust.8 /usr/share/asciidoc/docbook-xsl/manpage.xsl %{name}/update-ca-trust.8.xml
+asciidoc -v -d manpage -b docbook %{name}/update-ca-trust.8.txt
+xmlto -v -o %{name} man %{name}/update-ca-trust.8.xml
 
 cp %{SOURCE9} %{name}/ca-legacy.8.txt
-asciidoc.py -v -d manpage -b docbook %{name}/ca-legacy.8.txt
-xsltproc --nonet -o %{name}/ca-legacy.8 /usr/share/asciidoc/docbook-xsl/manpage.xsl %{name}/ca-legacy.8.xml
+asciidoc -v -d manpage -b docbook %{name}/ca-legacy.8.txt
+xmlto -v -o %{name} man %{name}/ca-legacy.8.xml
+%endif
 
 
 %install
@@ -188,30 +196,33 @@ mkdir -p -m 755 $RPM_BUILD_ROOT%{pkidir}/java
 mkdir -p -m 755 $RPM_BUILD_ROOT%{_sysconfdir}/ssl
 mkdir -p -m 755 $RPM_BUILD_ROOT%{catrustdir}/source
 mkdir -p -m 755 $RPM_BUILD_ROOT%{catrustdir}/source/anchors
-mkdir -p -m 755 $RPM_BUILD_ROOT%{catrustdir}/source/blacklist
+mkdir -p -m 755 $RPM_BUILD_ROOT%{catrustdir}/source/blocklist
 mkdir -p -m 755 $RPM_BUILD_ROOT%{catrustdir}/extracted
 mkdir -p -m 755 $RPM_BUILD_ROOT%{catrustdir}/extracted/pem
+mkdir -p -m 555 $RPM_BUILD_ROOT%{catrustdir}/extracted/pem/directory-hash
 mkdir -p -m 755 $RPM_BUILD_ROOT%{catrustdir}/extracted/openssl
 mkdir -p -m 755 $RPM_BUILD_ROOT%{catrustdir}/extracted/java
+mkdir -p -m 755 $RPM_BUILD_ROOT%{catrustdir}/extracted/edk2
 mkdir -p -m 755 $RPM_BUILD_ROOT%{_datadir}/pki/ca-trust-source
 mkdir -p -m 755 $RPM_BUILD_ROOT%{_datadir}/pki/ca-trust-source/anchors
-mkdir -p -m 755 $RPM_BUILD_ROOT%{_datadir}/pki/ca-trust-source/blacklist
+mkdir -p -m 755 $RPM_BUILD_ROOT%{_datadir}/pki/ca-trust-source/blocklist
 mkdir -p -m 755 $RPM_BUILD_ROOT%{_datadir}/pki/ca-trust-legacy
 mkdir -p -m 755 $RPM_BUILD_ROOT%{_bindir}
 mkdir -p -m 755 $RPM_BUILD_ROOT%{_mandir}/man8
 
+%if %{with docs}
 install -p -m 644 %{name}/update-ca-trust.8 $RPM_BUILD_ROOT%{_mandir}/man8
 install -p -m 644 %{name}/ca-legacy.8 $RPM_BUILD_ROOT%{_mandir}/man8
+%endif
 install -p -m 644 %{SOURCE11} $RPM_BUILD_ROOT%{_datadir}/pki/ca-trust-source/README
 install -p -m 644 %{SOURCE12} $RPM_BUILD_ROOT%{catrustdir}/README
 install -p -m 644 %{SOURCE13} $RPM_BUILD_ROOT%{catrustdir}/extracted/README
 install -p -m 644 %{SOURCE14} $RPM_BUILD_ROOT%{catrustdir}/extracted/java/README
 install -p -m 644 %{SOURCE15} $RPM_BUILD_ROOT%{catrustdir}/extracted/openssl/README
 install -p -m 644 %{SOURCE16} $RPM_BUILD_ROOT%{catrustdir}/extracted/pem/README
-install -p -m 644 %{SOURCE17} $RPM_BUILD_ROOT%{catrustdir}/source/README
-
-mkdir -p -m 755 $RPM_BUILD_ROOT%{_datadir}/doc/%{name}-%{version}
-install -p -m 644 %{SOURCE18} $RPM_BUILD_ROOT%{_datadir}/doc/%{name}-%{version}/README
+install -p -m 644 %{SOURCE17} $RPM_BUILD_ROOT%{catrustdir}/extracted/edk2/README
+install -p -m 644 %{SOURCE18} $RPM_BUILD_ROOT%{catrustdir}/source/README
+install -p -m 644 %{SOURCE19} $RPM_BUILD_ROOT%{_sysconfdir}/ssl/README
 
 install -p -m 644 %{name}/%{p11_format_bundle} $RPM_BUILD_ROOT%{_datadir}/pki/ca-trust-source/%{p11_format_bundle}
 
@@ -239,26 +250,84 @@ touch $RPM_BUILD_ROOT%{catrustdir}/extracted/pem/email-ca-bundle.pem
 chmod 444 $RPM_BUILD_ROOT%{catrustdir}/extracted/pem/email-ca-bundle.pem
 touch $RPM_BUILD_ROOT%{catrustdir}/extracted/pem/objsign-ca-bundle.pem
 chmod 444 $RPM_BUILD_ROOT%{catrustdir}/extracted/pem/objsign-ca-bundle.pem
-touch $RPM_BUILD_ROOT%{catrustdir}/extracted/openssl/%{openssl_format_trust_bundle}
-chmod 444 $RPM_BUILD_ROOT%{catrustdir}/extracted/openssl/%{openssl_format_trust_bundle}
 touch $RPM_BUILD_ROOT%{catrustdir}/extracted/%{java_bundle}
 chmod 444 $RPM_BUILD_ROOT%{catrustdir}/extracted/%{java_bundle}
+touch $RPM_BUILD_ROOT%{catrustdir}/extracted/edk2/cacerts.bin
+chmod 444 $RPM_BUILD_ROOT%{catrustdir}/extracted/edk2/cacerts.bin
 
-# /etc/ssl/certs symlink for 3rd-party tools
-sln ../pki/tls/certs \
+# Populate %%{catrustdir}/extracted/pem/directory-hash.
+#
+# First direct p11-kit-trust.so to the generated bundle (not the one
+# already present on the build system) with an overriding module
+# config. Note that we have to use a different config path based on
+# the current user: if root, ~/.config/pkcs11/modules/* are not read,
+# while if a regular user, she can't write to /etc.
+if test "$(id -u)" -eq 0; then
+   trust_module_dir=/etc/pkcs11/modules
+else
+   trust_module_dir=$HOME/.config/pkcs11/modules
+fi
+
+mkdir -p "$trust_module_dir"
+
+# It is unlikely that the directory would contain any files on a build system,
+# but let's make sure just in case.
+if [ -n "$(ls -A "$trust_module_dir")" ]; then
+        echo "Directory $trust_module_dir is not empty. Aborting build!"
+        exit 1
+fi
+
+trust_module_config=$trust_module_dir/%{name}-p11-kit-trust.module
+cat >"$trust_module_config" <<EOF
+module: p11-kit-trust.so
+trust-policy: yes
+x-init-reserved: paths='$RPM_BUILD_ROOT%{_datadir}/pki/ca-trust-source'
+EOF
+
+# Extract the trust anchors to the directory-hash format.
+trust extract --format=pem-directory-hash --filter=ca-anchors --overwrite \
+              --purpose server-auth \
+              $RPM_BUILD_ROOT%{catrustdir}/extracted/pem/directory-hash
+
+# Clean up the temporary module config.
+rm -f "$trust_module_config"
+
+find $RPM_BUILD_ROOT%{catrustdir}/extracted/pem/directory-hash -type l \
+     -regextype posix-extended -regex '.*/[0-9a-f]{8}\.[0-9]+' \
+     -exec cp -P {} $RPM_BUILD_ROOT%{pkidir}/tls/certs/ \;
+# Create a temporary file with the list of (%%ghost )files in the directory-hash and their copies
+find $RPM_BUILD_ROOT%{catrustdir}/extracted/pem/directory-hash -type f > .files.txt
+find $RPM_BUILD_ROOT%{catrustdir}/extracted/pem/directory-hash -type l >> .files.txt
+find $RPM_BUILD_ROOT%{pkidir}/tls/certs -type l -regextype posix-extended \
+     -regex '.*/[0-9a-f]{8}\.[0-9]+' >> .files.txt
+
+sed -i "s|^$RPM_BUILD_ROOT|%ghost /|" .files.txt
+
+# /etc/ssl is provided in a Debian compatible form for (bad) code that
+# expects it: https://bugzilla.redhat.com/show_bug.cgi?id=1053882
+ln -s %{pkidir}/tls/certs \
     $RPM_BUILD_ROOT%{_sysconfdir}/ssl/certs
+ln -s %{catrustdir}/extracted/pem/tls-ca-bundle.pem \
+    $RPM_BUILD_ROOT%{_sysconfdir}/ssl/cert.pem
+ln -s /etc/pki/tls/openssl.cnf \
+    $RPM_BUILD_ROOT%{_sysconfdir}/ssl/openssl.cnf
+ln -s /etc/pki/tls/ct_log_list.cnf \
+    $RPM_BUILD_ROOT%{_sysconfdir}/ssl/ct_log_list.cnf
 # legacy filenames
-sln %{catrustdir}/extracted/pem/tls-ca-bundle.pem \
+ln -s %{catrustdir}/extracted/pem/tls-ca-bundle.pem \
     $RPM_BUILD_ROOT%{pkidir}/tls/cert.pem
-sln %{catrustdir}/extracted/pem/tls-ca-bundle.pem \
-    $RPM_BUILD_ROOT%{pkidir}/tls/certs/%{classic_tls_bundle}
-sln %{catrustdir}/extracted/openssl/%{openssl_format_trust_bundle} \
-    $RPM_BUILD_ROOT%{pkidir}/tls/certs/%{openssl_format_trust_bundle}
-sln %{catrustdir}/extracted/%{java_bundle} \
+ln -s %{catrustdir}/extracted/%{java_bundle} \
     $RPM_BUILD_ROOT%{pkidir}/%{java_bundle}
+ln -s %{catrustdir}/extracted/pem/tls-ca-bundle.pem \
+    $RPM_BUILD_ROOT%{pkidir}/tls/certs/%{classic_tls_bundle}
+ln -s %{catrustdir}/extracted/pem/tls-ca-bundle.pem \
+    $RPM_BUILD_ROOT%{pkidir}/tls/certs/ca-certificates.crt
 
 %pre
 if [ $1 -gt 1 ] ; then
+  # Remove the old symlinks
+  rm -f %{pkidir}/tls/certs/ca-bundle.trust.crt
+
   # Upgrade or Downgrade.
   # If the classic filename is a regular file, then we are upgrading
   # from an old package and we will move it to an .rpmsave backup file.
@@ -273,7 +342,7 @@ if [ $1 -gt 1 ] ; then
     # no backup yet
     if test -e %{pkidir}/%{java_bundle}; then
       # a file exists
-	  if ! test -L %{pkidir}/%{java_bundle}; then
+        if ! test -L %{pkidir}/%{java_bundle}; then
         # it's an old regular file, not a link
         mv -f %{pkidir}/%{java_bundle} %{pkidir}/%{java_bundle}.rpmsave
       fi
@@ -290,17 +359,6 @@ if [ $1 -gt 1 ] ; then
       fi
     fi
   fi
-
-  if ! test -e %{pkidir}/tls/certs/%{openssl_format_trust_bundle}.rpmsave; then
-    # no backup yet
-    if test -e %{pkidir}/tls/certs/%{openssl_format_trust_bundle}; then
-      # a file exists
-      if ! test -L %{pkidir}/tls/certs/%{openssl_format_trust_bundle}; then
-        # it's an old regular file, not a link
-        mv -f %{pkidir}/tls/certs/%{openssl_format_trust_bundle} %{pkidir}/tls/certs/%{openssl_format_trust_bundle}.rpmsave
-      fi
-    fi
-  fi
 fi
 
 
@@ -308,13 +366,29 @@ fi
 #if [ $1 -gt 1 ] ; then
 #  # when upgrading or downgrading
 #fi
+# if ln is available, go ahead and run the ca-legacy and update
+# scripts. If not, wait until %%posttrans.
+if [ -x %{_bindir}/ln ]; then
+%{_bindir}/ca-legacy install
+%{_bindir}/update-ca-trust
+fi
+
+%posttrans
+# When coreutils is installing with ca-certificates
+# we need to wait until coreutils install to
+# run our update since update requires ln to complete.
+# There is a circular dependency here where
+# ca-certificates depends on coreutils
+# coreutils depends on openssl
+# openssl depends on ca-certificates
+# so we run the scripts here too, in case we couldn't run them in
+# post. If we *could* run them in post this is an unnecessary
+# duplication, but it shouldn't hurt anything
 %{_bindir}/ca-legacy install
 %{_bindir}/update-ca-trust
 
-
-%files
-%defattr(-,root,root,-)
-
+# The file .files.txt contains the list of (%%ghost )files in the directory-hash
+%files -f .files.txt
 %dir %{_sysconfdir}/ssl
 %dir %{pkidir}/tls
 %dir %{pkidir}/tls/certs
@@ -322,7 +396,7 @@ fi
 %dir %{catrustdir}
 %dir %{catrustdir}/source
 %dir %{catrustdir}/source/anchors
-%dir %{catrustdir}/source/blacklist
+%dir %{catrustdir}/source/blocklist
 %dir %{catrustdir}/extracted
 %dir %{catrustdir}/extracted/pem
 %dir %{catrustdir}/extracted/openssl
@@ -330,31 +404,39 @@ fi
 %dir %{_datadir}/pki
 %dir %{_datadir}/pki/ca-trust-source
 %dir %{_datadir}/pki/ca-trust-source/anchors
-%dir %{_datadir}/pki/ca-trust-source/blacklist
+%dir %{_datadir}/pki/ca-trust-source/blocklist
 %dir %{_datadir}/pki/ca-trust-legacy
+%dir %{catrustdir}/extracted/pem/directory-hash
 
 %config(noreplace) %{catrustdir}/ca-legacy.conf
 
+%if %{with docs}
 %{_mandir}/man8/update-ca-trust.8.gz
 %{_mandir}/man8/ca-legacy.8.gz
+%endif
 %{_datadir}/pki/ca-trust-source/README
 %{catrustdir}/README
 %{catrustdir}/extracted/README
 %{catrustdir}/extracted/java/README
 %{catrustdir}/extracted/openssl/README
 %{catrustdir}/extracted/pem/README
+%{catrustdir}/extracted/edk2/README
 %{catrustdir}/source/README
-%{_datadir}/doc/%{name}-%{version}/README
 
 # symlinks for old locations
 %{pkidir}/tls/cert.pem
 %{pkidir}/tls/certs/%{classic_tls_bundle}
-%{pkidir}/tls/certs/%{openssl_format_trust_bundle}
+%{pkidir}/tls/certs/ca-certificates.crt
 %{pkidir}/%{java_bundle}
-# symlink directory
+# Hybrid hash directory with bundle file for Debian compatibility
+# See https://bugzilla.redhat.com/show_bug.cgi?id=1053882
 %{_sysconfdir}/ssl/certs
+%{_sysconfdir}/ssl/README
+%{_sysconfdir}/ssl/cert.pem
+%{_sysconfdir}/ssl/openssl.cnf
+%{_sysconfdir}/ssl/ct_log_list.cnf
 
-# master bundle file with trust
+# primary bundle file with trust
 %{_datadir}/pki/ca-trust-source/%{p11_format_bundle}
 
 %{_datadir}/pki/ca-trust-legacy/%{legacy_default_bundle}
@@ -367,11 +449,41 @@ fi
 %ghost %{catrustdir}/extracted/pem/tls-ca-bundle.pem
 %ghost %{catrustdir}/extracted/pem/email-ca-bundle.pem
 %ghost %{catrustdir}/extracted/pem/objsign-ca-bundle.pem
-%ghost %{catrustdir}/extracted/openssl/%{openssl_format_trust_bundle}
 %ghost %{catrustdir}/extracted/%{java_bundle}
+%ghost %{catrustdir}/extracted/edk2/cacerts.bin
 
 
 %changelog
+# * Tue Nov 03 2026 Philippe Coval <philippe.coval@vates.tech> - 2026.2.92-2.1
+# - Drop XCP-ng downstream changes not needed anymore
+# - Rebase on 2026.2.92-2
+# - *** Upstream changelog ***
+#   * Thu Oct 22 2026 Alex Brett <alex.brett@citrix.com> - 2026.2.92-2
+#   - CP-315380: Adjust build to be compatible with XS8
+
+#   * Wed Oct 21 2026 Alex Brett <alex.brett@citrix.com> - 2026.2.92-1
+#   - CP-315380: Update certificate data to 2026.2.92
+#   - CP-315380: Remove AAA Certificate Services root CA
+#   - CP-315380: Remove emSign ECC Root CA - G3 from Microsoft Code Signing certificates
+
+#    * Fri Jan 17 2025 Andrew Cooper <andrew.cooper3@citrix.com> - 2024.2.72-3
+#    - Fix spec file warnings and errors
+
+#   * Tue Jan 14 2025 Alex Brett <alex.brett@cloud.com> - 2024.2.72-2
+#   - CP-53127: Resync spec with upstream and fix issue with pre scriptlet
+
+#   * Mon Jan 13 2025 Alex Brett <alex.brett@cloud.com> - 2024.2.72-1
+#   - CP-53096: Update certificate data to 2024.2.72
+
+#   * Mon Jan 06 2025 Stephen Cheng <stephen.cheng@cloud.com> - 2023.2.60-3
+#   - CP-51666: Fix rpmlint error
+
+#   * Fri Jan 03 2025 Stephen Cheng <stephen.cheng@cloud.com> - 2023.2.60-2
+#   - Remove certificates from directory-hash
+
+#   * Wed Jul 12 2023 Tim Smith <tim.smith@citrix.com> - 2023.2.60-1
+#   - First imported release
+
 * Thu Oct 22 2026 Philippe Coval <philippe.coval@vates.tech> - 2021.2.50-73.2
 - Removing: AAA Certificate Services root CA (Krenželok František)
 - Removing: emSign ECC Root CA - G3 from Microsoft Code Signing certificates (Krenželok František)
